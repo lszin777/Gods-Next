@@ -1,0 +1,30 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+@theme {
+  --color-brand-blue: #A5D6FC;
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: '"Playfair Display"', serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: #1f2937;
+  background-color: #f9fafb;
+  overflow-x: hidden;
+}
+
+/* Scrollbar customizada elegante */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1; 
+}
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1; 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8; 
+}
