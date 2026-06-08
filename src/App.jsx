@@ -5,6 +5,11 @@ import MoodSelection from './pages/MoodSelection';
 import VerseDisplay from './pages/VerseDisplay';
 import Streak from './pages/Streak';
 import Calendar from './pages/Calendar';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import Diario from './pages/Diario';
+import DiaryWriting from './pages/DiaryWriting'; // <-- Importe aqui
 
 function App() {
   return (
@@ -17,6 +22,11 @@ function App() {
           <Route path="/verso/:mood" element={<VerseDisplay />} />
           <Route path="/sequencia" element={<Streak />} />
           <Route path="/calendario" element={<Calendar />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/cadastro" element={<Register />} />
+          <Route path="/esqueci-senha" element={<ForgotPassword />} />
+          <Route path="/diario" element={<Diario />} />
+          <Route path="/escrever-no-diario" element={<DiaryWriting />} /> {/* <-- Nova Rota */}
         </Routes>
       </div>
     </BrowserRouter>

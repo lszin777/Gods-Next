@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Cross, Calendar, Flame, BookOpen } from 'lucide-react';
+import { Cross, Calendar, Flame, BookOpen, LogIn } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Navbar() {
@@ -15,10 +15,25 @@ export default function Navbar() {
         Home
       </Link>
 
-      <div className="hidden md:flex gap-4">
+      <div className="hidden md:flex items-center gap-3">
         <NavButton to="/calendario" icon={<Calendar className="w-4 h-4" />} text="Calendário" />
         <NavButton to="/sequencia" icon={<Flame className="w-4 h-4" />} text="Sequência" />
         <NavButton to="/diario" icon={<BookOpen className="w-4 h-4" />} text="Diário" />
+        
+        {/* Linha separadora sutil */}
+        <div className="w-px h-6 bg-gray-400/50 mx-2"></div>
+
+        {/* Novo Botão de Login (Destaque) */}
+        <Link to="/login">
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-2 px-5 py-2 bg-white text-[#3B429F] border-2 border-[#3B429F] font-bold rounded-full text-sm shadow-md hover:bg-gray-50 transition-colors"
+          >
+            <LogIn className="w-4 h-4" />
+            Entrar
+          </motion.button>
+        </Link>
       </div>
     </motion.nav>
   );
