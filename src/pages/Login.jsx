@@ -1,20 +1,41 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+
+// Integração com Firebase
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebase';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aqui no futuro entrará a lógica de conectar com o banco de dados
-    console.log('Tentativa de login:', formData);
+    setError('');
+    setLoading(true);
+
+    try {
+      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      navigate('/diario');
+    } catch (err) {
+      console.error(err);
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError('E-mail ou senha incorretos.');
+      } else {
+        setError('Erro ao fazer login. Verifique sua conexão de internet.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -22,7 +43,6 @@ export default function Login() {
       className="min-h-screen pt-24 pb-12 px-6 flex items-center justify-center relative bg-cover bg-center" 
       style={{ backgroundImage: "url('/src/imagens/imagens/fundoplanta.png')" }}
     >
-      {/* Camada de desfoque e correntes sobre o fundo */}
       <div className="absolute inset-0 bg-white/60 backdrop-blur-sm"></div>
 
       <motion.div 
@@ -33,12 +53,18 @@ export default function Login() {
       >
         <div className="text-center mb-8">
           <h1 className="font-serif text-3xl md:text-4xl text-gray-900 mb-2">
-            Acesse a sua conta
+            Acessee a sua conta
           </h1>
           <p className="text-gray-600 font-light">
             Que bom ter você de volta!
           </p>
         </div>
+
+        {error && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded-xl mb-4 text-sm font-medium">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Campo de Email */}
@@ -51,6 +77,7 @@ export default function Login() {
               <input
                 type="email"
                 name="email"
+                disabled={loading}
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="seu@email.com"
@@ -70,6 +97,7 @@ export default function Login() {
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
+                disabled={loading}
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
@@ -95,13 +123,14 @@ export default function Login() {
 
           {/* Botão de Entrar */}
           <motion.button
-            whileHover={{ scale: 1.02, backgroundColor: "#313785" }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={!loading ? { scale: 1.02, backgroundColor: "#313785" } : {}}
+            whileTap={!loading ? { scale: 0.98 } : {}}
             type="submit"
-            className="w-full flex items-center justify-center gap-2 bg-[#3B429F] text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 bg-[#3B429F] text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
           >
-            ENTRAR
-            <ArrowRight className="w-5 h-5" />
+            {loading ? 'ENTRANDO...' : 'ENTRAR'}
+            {!loading && <ArrowRight className="w-5 h-5" />}
           </motion.button>
         </form>
 

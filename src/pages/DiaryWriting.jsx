@@ -3,19 +3,56 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check, ArrowLeft, Lock } from 'lucide-react';
 
+// Importações necessárias para conectar ao Firebase
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase';
+
 export default function DiaryWriting() {
   const [text, setText] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     if (text.trim().length < 10) {
       alert("Que tal escrever um pouco mais sobre o seu dia?");
       return;
     }
-    // Aqui no futuro salvaríamos no banco de dados
-    console.log("Relato salvo:", text);
-    alert("Sua caminhada de hoje foi registrada com sucesso!");
-    navigate('/diario');
+
+    const user = auth.currentUser;
+    if (!user) {
+      alert("Sessão expirada ou usuário não autenticado. Faça login novamente.");
+      navigate('/login');
+      return;
+    }
+
+    setLoading(true);
+
+    // Formata a data atual garantindo o padrão ISO local (AAAA-MM-DD) usado no calendário
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Soma 1 porque Janeiro é 0
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateKey = `${year}-${month}-${day}`;
+
+    try {
+      // Salva ou atualiza a coleção indexando pelo UID do usuário + data formatada
+      await setDoc(doc(db, "diary_records", `${user.uid}_${dateKey}`), {
+        userId: user.uid,
+        dateKey: dateKey,
+        diary: text,
+        verse: "Lembre-se das coisas que o Senhor fez por você.", // Mantendo o versículo padrão do seu projeto
+        reference: "1 Samuel 12:24",
+        createdAt: serverTimestamp()
+      });
+
+      alert("Sua caminhada de hoje foi registrada com sucesso!");
+      navigate('/calendario'); // Redireciona direto para o calendário para ver a chama acesa
+    } catch (error) {
+      console.error("Erro ao salvar no Firestore:", error);
+      alert("Houve um erro técnico ao salvar seu diário. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -68,20 +105,22 @@ export default function DiaryWriting() {
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
+              disabled={loading}
               placeholder="Digite aqui o que está no seu coração hoje..."
-              className="w-full h-full min-h-[350px] bg-white/50 border-2 border-transparent focus:border-[#3B429F]/30 rounded-3xl p-8 text-xl text-gray-800 placeholder-gray-400 outline-none transition-all shadow-inner resize-none font-light"
+              className="w-full h-full min-h-[350px] bg-white/50 border-2 border-transparent focus:border-[#3B429F]/30 rounded-3xl p-8 text-xl text-gray-800 placeholder-gray-400 outline-none transition-all shadow-inner resize-none font-light disabled:opacity-70"
             ></textarea>
 
             {/* Botão Concluir Posicionado no Canto */}
             <div className="absolute bottom-6 right-6">
               <motion.button
                 onClick={handleFinish}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 bg-[#3B429F] text-white px-8 py-3 rounded-2xl font-bold shadow-lg hover:bg-[#2D3380] transition-all"
+                disabled={loading}
+                whileHover={!loading ? { scale: 1.05 } : {}}
+                whileTap={!loading ? { scale: 0.95 } : {}}
+                className="flex items-center gap-2 bg-[#3B429F] text-white px-8 py-3 rounded-2xl font-bold shadow-lg hover:bg-[#2D3380] transition-all disabled:opacity-50"
               >
                 <Check className="w-5 h-5" />
-                Concluir
+                {loading ? "Salvando..." : "Concluir"}
               </motion.button>
             </div>
           </div>

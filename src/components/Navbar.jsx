@@ -1,52 +1,118 @@
-import { Link } from 'react-router-dom';
-import { Cross, Calendar, Flame, BookOpen, LogIn } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut, User, Flame, Calendar, BookOpen } from 'lucide-react';
+
+// Importações do Firebase para verificar o estado do login
+import { auth } from '../firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 export default function Navbar() {
+  const [user, setUser] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // Monitora em tempo real se o usuário está logado ou não
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe(); // Limpa o monitor ao desmontar o componente
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setMenuOpen(false);
+      navigate('/login');
+    } catch (error) {
+      console.error("Erro ao sair:", error);
+    }
+  };
+
   return (
-    <motion.nav 
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="fixed top-0 w-full z-50 px-6 py-4 flex justify-between items-center backdrop-blur-md bg-white/10 border-b border-white/20"
-    >
-      <Link to="/" className="flex items-center gap-2 font-semibold text-lg hover:opacity-80 transition-opacity">
-        <Cross className="w-5 h-5" />
-        Home
+    <nav className="fixed top-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 z-50 px-6 md:px-12 flex items-center justify-between">
+      
+      {/* LOGO DO PROJETO */}
+      <Link to="/" className="flex items-center gap-2 font-serif font-bold text-xl text-gray-800 tracking-wide">
+        <span className="text-[#3B429F]">God's</span> Next
       </Link>
 
-      <div className="hidden md:flex items-center gap-3">
-        <NavButton to="/calendario" icon={<Calendar className="w-4 h-4" />} text="Calendário" />
-        <NavButton to="/sequencia" icon={<Flame className="w-4 h-4" />} text="Sequência" />
-        <NavButton to="/diario" icon={<BookOpen className="w-4 h-4" />} text="Diário" />
-        
-        {/* Linha separadora sutil */}
-        <div className="w-px h-6 bg-gray-400/50 mx-2"></div>
-
-        {/* Novo Botão de Login (Destaque) */}
-        <Link to="/login">
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2 px-5 py-2 bg-white text-[#3B429F] border-2 border-[#3B429F] font-bold rounded-full text-sm shadow-md hover:bg-gray-50 transition-colors"
-          >
-            <LogIn className="w-4 h-4" />
-            Entrar
-          </motion.button>
+      {/* LINKS CENTRALIZADOS (OPCIONAL/ADAPTE SE PRECISAR) */}
+      <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
+        <Link to="/diario" className="hover:text-[#3B429F] transition-colors flex items-center gap-1">
+          <BookOpen className="w-4 h-4" /> Diário
+        </Link>
+        <Link to="/calendario" className="hover:text-[#3B429F] transition-colors flex items-center gap-1">
+          <Calendar className="w-4 h-4" /> Calendário
+        </Link>
+        <Link to="/sequencia" className="hover:text-[#3B429F] transition-colors flex items-center gap-1">
+          <Flame className="w-4 h-4 text-orange-500" /> Sequência
         </Link>
       </div>
-    </motion.nav>
+
+      {/* ÁREA DINÂMICA DA DIREITA: LOGIN OU FOTO DE USUÁRIO */}
+      <div className="relative flex items-center gap-4">
+        {user ? (
+          /* USUÁRIO LOGADO: Exibe o Círculo com o Logo da Igreja */
+          <div className="relative">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="w-11 h-11 rounded-full border-2 border-[#3B429F]/30 p-0.5 overflow-hidden shadow-sm hover:border-[#3B429F] transition-all bg-white flex items-center justify-center"
+            >
+              <img 
+                src="/src/imagens/imagens/logoigreja.png" 
+                alt="Foto do Usuário" 
+                className="w-full h-full object-cover rounded-full"
+                onError={(e) => {
+                  // Fallback caso o caminho da imagem mude ou falhe
+                  e.target.src = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100";
+                }}
+              />
+            </motion.button>
+
+            {/* Menu Dropdown de Opções ao Clicar na Foto */}
+            <AnimatePresence>
+              {menuOpen && (
+                <>
+                  {/* Overlay invisível para fechar ao clicar fora */}
+                  <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)}></div>
+                  
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-20"
+                  >
+                    <div className="px-4 py-2 border-b border-gray-50 text-xs font-bold text-gray-400 truncate">
+                      {user.email}
+                    </div>
+                    
+                    <button
+                      onClick={handleLogout}
+                      className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium transition-colors text-left"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sair da conta
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        ) : (
+          /* USUÁRIO DESLOGADO: Exibe o botão de Entrar */
+          <Link 
+            to="/login" 
+            className="bg-[#3B429F] hover:bg-[#2D3380] text-white text-sm font-bold px-6 py-2.5 rounded-full transition-all shadow-md shadow-[#3B429F]/10"
+          >
+            Entrar
+          </Link>
+        )}
+      </div>
+
+    </nav>
   );
 }
-
-const NavButton = ({ to, icon, text }) => (
-  <Link to={to}>
-    <motion.button 
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      className="flex items-center gap-2 px-4 py-2 bg-[#3B429F] text-white rounded-full text-sm shadow-lg hover:bg-[#4F46E5] transition-colors"
-    >
-      {icon} {text}
-    </motion.button>
-  </Link>
-);

@@ -3,15 +3,36 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, ArrowLeft, Send, CheckCircle } from 'lucide-react';
 
+// Integração com Firebase
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../firebase';
+
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aqui entrará a lógica para enviar o e-mail pelo banco de dados
-    console.log('Link de recuperação enviado para:', email);
-    setIsSubmitted(true);
+    setError('');
+    setLoading(true);
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setIsSubmitted(true);
+    } catch (err) {
+      console.error(err);
+      if (err.code === 'auth/user-not-found') {
+        setError('Não encontramos nenhuma conta com este e-mail.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('O formato do e-mail digitado é inválido.');
+      } else {
+        setError('Ocorreu um erro ao processar seu pedido. Tente novamente.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,6 +72,12 @@ export default function ForgotPassword() {
                 </p>
               </div>
 
+              {error && (
+                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded-xl mb-4 text-sm font-medium">
+                  {error}
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 ml-1">E-mail</label>
@@ -60,6 +87,7 @@ export default function ForgotPassword() {
                     </div>
                     <input
                       type="email"
+                      disabled={loading}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="seu@email.com"
@@ -70,13 +98,14 @@ export default function ForgotPassword() {
                 </div>
 
                 <motion.button
-                  whileHover={{ scale: 1.02, backgroundColor: "#313785" }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={!loading ? { scale: 1.02, backgroundColor: "#313785" } : {}}
+                  whileTap={!loading ? { scale: 0.98 } : {}}
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 bg-[#3B429F] text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 bg-[#3B429F] text-white py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
                 >
                   <Send className="w-5 h-5" />
-                  ENVIAR LINK
+                  {loading ? 'ENVIANDO...' : 'ENVIAR LINK'}
                 </motion.button>
               </form>
             </motion.div>

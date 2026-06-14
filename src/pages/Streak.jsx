@@ -1,194 +1,197 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Flame, Calendar, Award, CheckCircle2, Trophy } from 'lucide-react';
+import { Flame, Calendar, ArrowLeft, Award, Sparkles } from 'lucide-react';
+
+// Importações do Firebase para calcular a sequência
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 
 export default function Streak() {
-  // --- CONTROLE DE DADOS REAIS ---
-  // O contador de dias seguidos agora começa em 0 (totalmente real)
   const [streakCount, setStreakCount] = useState(0);
-  
-  // Guarda o histórico real de dias concluídos no formato { "ANO-MES-DIA": true }
-  const [completedDates, setCompletedDates] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  // 1. LÓGICA PARA CALCULAR A SEMANA ATUAL DINAMICAMENTE
-  const today = new Date();
-  const currentDayOfWeek = today.getDay(); // 0 = Domingo, 1 = Segunda, etc.
-  
-  // Calcula a distância em dias para a Segunda-feira da semana atual
-  const distanceToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
-  
-  const mondayOfCurrentWeek = new Date(today);
-  mondayOfCurrentWeek.setDate(today.getDate() + distanceToMonday);
-
-  const daysName = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-
-  // Monta a lista dos 7 dias da semana atual com base na data real
-  const weekDays = daysName.map((name, index) => {
-    const d = new Date(mondayOfCurrentWeek);
-    d.setDate(mondayOfCurrentWeek.getDate() + index);
-    
-    const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    const isToday = d.getDate() === today.getDate() && 
-                    d.getMonth() === today.getMonth() && 
-                    d.getFullYear() === today.getFullYear();
-                    
-    return {
-      name,
-      dateKey,
-      isToday,
-      completed: !!completedDates[dateKey] // Fica true apenas se estiver no estado real
-    };
-  });
-
-  // Chave única para o dia de hoje
-  const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
-  // A chama principal só fica acesa se o dia de hoje já tiver sido concluído
-  const isLit = !!completedDates[todayKey];
-
-  // Ação de acender a fogueira
-  const handleLightFlame = () => {
-    if (!isLit) {
-      // Regista o dia de hoje no histórico real
-      setCompletedDates(prev => ({
-        ...prev,
-        [todayKey]: true
-      }));
-      // Sobe 1 dia na sequência do utilizador
-      setStreakCount(prev => prev + 1);
-    }
+  // Função para formatar a data no padrão AAAA-MM-DD local
+  const formatDateKey = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   };
+
+  useEffect(() => {
+    const calculateStreak = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // 1. Busca todos os registros de diário do usuário logado
+        const q = query(
+          collection(db, "diary_records"),
+          where("userId", "==", user.uid)
+        );
+        const querySnapshot = await getDocs(q);
+        
+        // 2. Guarda todas as datas preenchidas em um Set (para busca rápida)
+        const savedDates = new Set();
+        querySnapshot.forEach((doc) => {
+          if (doc.data().dateKey) {
+            savedDates.add(doc.data().dateKey);
+          }
+        });
+
+        // 3. Lógica do Streak: Começa a checar a partir de hoje para trás
+        let currentCheckDate = new Date();
+        let currentStreak = 0;
+
+        // Formato de hoje
+        const todayStr = formatDateKey(currentCheckDate);
+        
+        // Formato de ontem (caso o usuário ainda não tenha escrito hoje, mas escreveu ontem)
+        const yesterdayCheck = new Date();
+        yesterdayCheck.setDate(yesterdayCheck.getDate() - 1);
+        const yesterdayStr = formatDateKey(yesterdayCheck);
+
+        // Se não escreveu nem hoje nem ontem, o streak quebrou (é 0)
+        if (!savedDates.has(todayStr) && !savedDates.has(yesterdayStr)) {
+          setStreakCount(0);
+          setLoading(false);
+          return;
+        }
+
+        // Se escreveu ontem mas ainda não hoje, começa a contar a partir de ontem
+        if (!savedDates.has(todayStr) && savedDates.has(yesterdayStr)) {
+          currentCheckDate = yesterdayCheck;
+        }
+
+        // Loop que vai voltando dia por dia para ver até onde vai a sequência ininterrupta
+        while (true) {
+          const dateStr = formatDateKey(currentCheckDate);
+          
+          if (savedDates.has(dateStr)) {
+            currentStreak++;
+            // Volta 1 dia no calendário
+            currentCheckDate.setDate(currentCheckDate.getDate() - 1);
+          } else {
+            // No primeiro dia que ele falhou, o loop para
+            break;
+          }
+        }
+
+        setStreakCount(currentStreak);
+      } catch (error) {
+        console.error("Erro ao calcular a sequência:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    calculateStreak();
+  }, []);
 
   return (
     <div 
-      className="min-h-screen pt-32 pb-12 px-6 flex flex-col items-center relative bg-cover bg-center" 
+      className="min-h-screen pt-28 pb-12 px-6 flex flex-col items-center relative bg-cover bg-center" 
       style={{ backgroundImage: "url('/src/imagens/imagens/fundoplanta.png')" }}
     >
-      {/* Camada de desfoque sobre o fundo */}
-      <div className="absolute inset-0 bg-white/60 backdrop-blur-sm"></div>
+      {/* Camada de desfoque sutil sobre o fundo */}
+      <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px]"></div>
 
-      <div className="relative z-10 w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+      <div className="relative z-10 w-full max-w-3xl flex flex-col items-center">
         
-        {/* LADO ESQUERDO: Painel Principal da Fogueira */}
+        {/* Link para Voltar */}
+        <div className="w-full text-left mb-6">
+          <Link to="/diario" className="inline-flex items-center text-gray-600 hover:text-[#3B429F] transition-colors group">
+            <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
+            Voltar ao diário
+          </Link>
+        </div>
+
+        {/* Card Principal da Sequência */}
         <motion.div 
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="md:col-span-2 bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/50 flex flex-col items-center text-center relative overflow-hidden"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full bg-white/80 backdrop-blur-md rounded-[40px] p-8 md:p-12 shadow-2xl border border-white/50 text-center flex flex-col items-center gap-6"
         >
-          {/* Brilho dinâmico atrás da chama */}
-          <div className={`absolute w-72 h-72 rounded-full blur-[80px] transition-all duration-1000 -z-10 ${isLit ? 'bg-orange-400/30' : 'bg-gray-300/10'}`}></div>
-
-          <h2 className="font-serif text-2xl md:text-3xl text-gray-900 mb-2">Chama Devocional</h2>
-          <p className="text-gray-600 text-sm max-w-sm mb-10">Mantenha seu coração aquecido pela palavra de Deus todos os dias.</p>
-
-          {/* Animação da Chama */}
-          <div className="relative cursor-pointer mb-10" onClick={handleLightFlame}>
-            <motion.div
-              animate={isLit ? {
-                scale: [1, 1.08, 1],
-                y: [0, -8, 0],
-                filter: ["drop-shadow(0 0 15px rgba(249,115,22,0.6))", "drop-shadow(0 0 35px rgba(239,68,68,0.8))", "drop-shadow(0 0 15px rgba(249,115,22,0.6))"]
-              } : {
-                scale: 1,
-                filter: "drop-shadow(0 0 0px rgba(0,0,0,0))"
-              }}
-              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-            >
-              <Flame 
-                className={`w-40 h-40 transition-colors duration-700 ${isLit ? 'text-orange-500 fill-orange-400' : 'text-gray-300'}`} 
-              />
-            </motion.div>
-          </div>
-
-          {/* Botão de Ação */}
-          <motion.button
-            whileHover={!isLit ? { scale: 1.03 } : {}}
-            whileTap={!isLit ? { scale: 0.97 } : {}}
-            onClick={handleLightFlame}
-            disabled={isLit}
-            className={`px-8 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all ${
-              isLit 
-                ? 'bg-emerald-500 text-white shadow-emerald-500/20 cursor-default' 
-                : 'bg-[#3B429F] text-white hover:bg-[#313785] shadow-[#3B429F]/20'
-            }`}
-          >
-            {isLit ? 'Chama de Hoje Acesa!' : 'Acender Chama de Hoje'}
-          </motion.button>
-        </motion.div>
-
-        {/* LADO DIREITO: Estatísticas Reais */}
-        <div className="flex flex-col gap-6 w-full">
-          
-          {/* Card de Dias Seguidos */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white/50 flex items-center gap-5"
-          >
-            <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-500 shadow-inner">
-              <Trophy className="w-7 h-7" />
+          {loading ? (
+            <div className="py-12 flex flex-col items-center justify-center text-gray-500">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mb-4"></div>
+              <p>Calculando sua constância...</p>
             </div>
-            <div>
-              <div className="text-4xl font-extrabold text-gray-900 leading-none">{streakCount}</div>
-              <div className="text-gray-500 text-sm font-medium mt-1">Dias Seguidos</div>
-            </div>
-          </motion.div>
-
-          {/* Card de Conquista */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white/50 flex items-center gap-5"
-          >
-            <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 shadow-inner">
-              <Award className="w-7 h-7" />
-            </div>
-            <div>
-              <div className="text-sm text-gray-500 font-medium">Próxima Conquista</div>
-              <div className="text-gray-900 font-bold text-base mt-0.5">
-                {streakCount >= 7 ? '15 Dias de Fé' : '7 Dias Resilientes'}
+          ) : (
+            <>
+              <div className="relative">
+                {/* Efeito de brilho atrás da chama se o streak for maior que 0 */}
+                {streakCount > 0 && (
+                  <motion.div 
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    className="absolute inset-0 bg-orange-400/30 blur-3xl rounded-full"
+                  ></motion.div>
+                )}
+                
+                {/* Ícone Dinâmico da Chama */}
+                <motion.div
+                  animate={streakCount > 0 ? { y: [0, -8, 0] } : {}}
+                  transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                  className="relative z-10"
+                >
+                  <Flame 
+                    className={`w-32 h-32 ${streakCount > 0 ? 'text-orange-500 drop-shadow-[0_10px_20px_rgba(249,115,22,0.4)]' : 'text-gray-300'}`} 
+                  />
+                </motion.div>
               </div>
-            </div>
-          </motion.div>
-        </div>
+
+              {/* Contador de Dias */}
+              <div className="space-y-1">
+                <h1 className="text-6xl md:text-7xl font-serif font-bold text-gray-900">
+                  {streakCount} {streakCount === 1 ? 'Dia' : 'Dias'}
+                </h1>
+                <p className="text-gray-500 text-lg font-light tracking-wide">
+                  {streakCount > 0 ? 'de conexão diária e intimidade com Deus!' : 'Comece sua sequência hoje!'}
+                </p>
+              </div>
+
+              <div className="h-px bg-gray-200 w-full my-2"></div>
+
+              {/* Mensagem Motivacional Baseada nos Dias */}
+              <div className="flex items-center gap-3 bg-white/50 border border-white/80 p-4 rounded-2xl shadow-inner max-w-md">
+                {streakCount >= 7 ? (
+                  <Award className="w-6 h-6 text-yellow-500 shrink-0" />
+                ) : (
+                  <Sparkles className="w-6 h-6 text-orange-400 shrink-0" />
+                )}
+                <p className="text-sm text-gray-700 text-left leading-relaxed font-medium">
+                  {streakCount === 0 && "O primeiro passo é o mais importante. Que tal abrir o diário e conversar com o Criador agora mesmo?"}
+                  {streakCount > 0 && streakCount < 3 && "Excelente começo! A constância é construída um dia de cada vez. Continue firme."}
+                  {streakCount >= 3 && streakCount < 7 && "Você está criando um hábito poderoso! Sinta a presença de Deus guiando os seus dias."}
+                  {streakCount >= 7 && "Incrível! Uma semana inteira dedicada a lembrar-se das obras do Senhor. Você é uma inspiração!"}
+                </p>
+              </div>
+
+              {/* Ações Rápidas */}
+              <div className="flex flex-col sm:flex-row gap-4 w-full mt-4 justify-center">
+                <Link 
+                  to="/escrever-no-diario"
+                  className="inline-flex items-center justify-center gap-2 bg-[#3B429F] hover:bg-[#2D3380] text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-md"
+                >
+                  Escrever no Diário
+                </Link>
+                <Link 
+                  to="/calendario"
+                  className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-8 py-4 rounded-2xl font-bold transition-all shadow-sm"
+                >
+                  <Calendar className="w-5 h-5 text-gray-400" />
+                  Ver Calendário
+                </Link>
+              </div>
+            </>
+          )}
+        </motion.div>
       </div>
-
-      {/* SEÇÃO INFERIOR: Progresso Semanal Dinâmico */}
-      <motion.div 
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="relative z-10 w-full max-w-4xl bg-[#EBE7E0]/90 backdrop-blur-md rounded-3xl p-8 mt-8 shadow-2xl border border-white/50"
-      >
-        <div className="flex items-center gap-2 mb-6">
-          <Calendar className="w-5 h-5 text-[#3B429F]" />
-          <h3 className="font-serif text-xl text-gray-900">Progresso Semanal</h3>
-        </div>
-
-        <div className="grid grid-cols-4 sm:grid-cols-7 gap-4">
-          {weekDays.map((day, idx) => (
-            <div 
-              key={idx} 
-              className={`flex flex-col items-center p-3 rounded-2xl border transition-all ${
-                day.isToday 
-                  ? 'bg-white border-[#3B429F] shadow-md ring-2 ring-[#3B429F]/20' 
-                  : 'bg-white/40 border-transparent'
-              }`}
-            >
-              <span className={`text-xs font-semibold mb-2 ${day.isToday ? 'text-[#3B429F] font-bold' : 'text-gray-500'}`}>
-                {day.name} {day.isToday && '(Hoje)'}
-              </span>
-              
-              {day.completed ? (
-                <CheckCircle2 className="w-6 h-6 text-emerald-500 fill-emerald-100" />
-              ) : (
-                <div className={`w-6 h-6 rounded-full border-2 ${day.isToday ? 'border-[#3B429F]/40 border-dashed animate-pulse' : 'border-gray-300'}`} />
-              )}
-            </div>
-          ))}
-        </div>
-      </motion.div>
     </div>
   );
 }

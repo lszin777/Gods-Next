@@ -30,7 +30,7 @@ export default function Diario() {
         transition={{ duration: 0.6, delay: 0.2 }}
         className="relative z-10 w-full max-w-5xl bg-[#EBE7E0]/90 backdrop-blur-md rounded-3xl p-8 md:p-12 shadow-2xl border border-white/50 flex flex-col md:flex-row items-center gap-12"
       >
-        {/* Lado Esquerdo - Imagem da Bíblia/Diário (Tamanho ampliado) */}
+        {/* Lado Esquerdo - Imagem da Bíblia/Diário */}
         <motion.div 
           whileHover={{ y: -10 }}
           transition={{ type: "spring", stiffness: 300 }}
@@ -79,7 +79,7 @@ export default function Diario() {
         </div>
       </motion.div>
 
-      {/* Rodapé de Privacidade com Ícone de Cadeado */}
+      {/* Rodapé de Privacidade */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

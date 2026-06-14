@@ -1,29 +1,68 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
+
+// Integração com Firebase
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '../firebase';
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if(formData.password !== formData.confirmPassword) {
-      alert("As senhas não coincidem!");
+    setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("As senhas não coincidem!");
       return;
     }
-    console.log('Dados de cadastro:', formData);
+
+    if (formData.password.length < 6) {
+      setError("A senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Cria o usuário no Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      
+      // Salva o Nome Completo no perfil do Firebase
+      await updateProfile(userCredential.user, {
+        displayName: formData.name
+      });
+
+      alert('Conta criada com sucesso! Seja bem-vindo(a).');
+      navigate('/diario');
+    } catch (err) {
+      console.error(err);
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Este e-mail já está sendo utilizado por outra conta.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('O formato do e-mail inserido é inválido.');
+      } else {
+        setError('Ocorreu um erro ao criar a conta. Tente novamente.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div 
       className="min-h-screen pt-24 pb-12 px-6 flex items-center justify-center relative bg-cover bg-center" 
-      style={{ backgroundImage: "url('/src/assets/imagens/fundoplanta.png')" }}
+      style={{ backgroundImage: "url('/src/imagens/imagens/fundoplanta.png')" }}
     >
       <div className="absolute inset-0 bg-white/60 backdrop-blur-sm"></div>
 
@@ -42,6 +81,12 @@ export default function Register() {
           </p>
         </div>
 
+        {error && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded-xl mb-4 text-sm font-medium">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Campo de Nome */}
           <div>
@@ -53,6 +98,7 @@ export default function Register() {
               <input
                 type="text"
                 name="name"
+                disabled={loading}
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="Seu nome"
@@ -72,6 +118,7 @@ export default function Register() {
               <input
                 type="email"
                 name="email"
+                disabled={loading}
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="seu@email.com"
@@ -91,6 +138,7 @@ export default function Register() {
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
+                disabled={loading}
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Crie uma senha"
@@ -117,6 +165,7 @@ export default function Register() {
               <input
                 type="password"
                 name="confirmPassword"
+                disabled={loading}
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 placeholder="Repita a senha"
@@ -128,13 +177,14 @@ export default function Register() {
 
           <div className="pt-2">
             <motion.button
-              whileHover={{ scale: 1.02, backgroundColor: "#313785" }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={!loading ? { scale: 1.02, backgroundColor: "#313785" } : {}}
+              whileTap={!loading ? { scale: 0.98 } : {}}
               type="submit"
-              className="w-full flex items-center justify-center gap-2 bg-[#3B429F] text-white py-4 rounded-2xl font-semibold text-lg shadow-lg transition-all"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 bg-[#3B429F] text-white py-4 rounded-2xl font-semibold text-lg shadow-lg transition-all disabled:opacity-50"
             >
-              CRIAR CONTA
-              <ArrowRight className="w-5 h-5" />
+              {loading ? 'CRIANDO CONTA...' : 'CRIAR CONTA'}
+              {!loading && <ArrowRight className="w-5 h-5" />}
             </motion.button>
           </div>
         </form>
