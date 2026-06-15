@@ -1,197 +1,203 @@
+// src/pages/Streak.jsx
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { db } from '../firebase';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { ArrowLeft, Flame, Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Flame, Calendar, ArrowLeft, Award, Sparkles } from 'lucide-react';
-
-// Importações do Firebase para calcular a sequência
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, db } from '../firebase';
 
 export default function Streak() {
-  const [streakCount, setStreakCount] = useState(0);
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [streakCount, setStreakCount] = useState(0);
+  const [isLitToday, setIsLitToday] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
-  // Função para formatar a data no padrão AAAA-MM-DD local
-  const formatDateKey = (date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+  // ID de usuário padrão para testes locais
+  const userId = localStorage.getItem('user_id') || 'usuario_teste_devocional';
+
+  // Função auxiliar para gerar strings de data idênticas e seguras
+  const getCleanDateString = (date) => {
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
   useEffect(() => {
-    const calculateStreak = async () => {
-      const user = auth.currentUser;
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
+    const checkStreak = async () => {
       try {
-        // 1. Busca todos os registros de diário do usuário logado
-        const q = query(
-          collection(db, "diary_records"),
-          where("userId", "==", user.uid)
-        );
-        const querySnapshot = await getDocs(q);
-        
-        // 2. Guarda todas as datas preenchidas em um Set (para busca rápida)
-        const savedDates = new Set();
-        querySnapshot.forEach((doc) => {
-          if (doc.data().dateKey) {
-            savedDates.add(doc.data().dateKey);
-          }
-        });
+        const streakRef = doc(db, 'user_streaks', userId);
+        const streakDoc = await getDoc(streakRef);
 
-        // 3. Lógica do Streak: Começa a checar a partir de hoje para trás
-        let currentCheckDate = new Date();
-        let currentStreak = 0;
-
-        // Formato de hoje
-        const todayStr = formatDateKey(currentCheckDate);
-        
-        // Formato de ontem (caso o usuário ainda não tenha escrito hoje, mas escreveu ontem)
-        const yesterdayCheck = new Date();
-        yesterdayCheck.setDate(yesterdayCheck.getDate() - 1);
-        const yesterdayStr = formatDateKey(yesterdayCheck);
-
-        // Se não escreveu nem hoje nem ontem, o streak quebrou (é 0)
-        if (!savedDates.has(todayStr) && !savedDates.has(yesterdayStr)) {
-          setStreakCount(0);
-          setLoading(false);
-          return;
-        }
-
-        // Se escreveu ontem mas ainda não hoje, começa a contar a partir de ontem
-        if (!savedDates.has(todayStr) && savedDates.has(yesterdayStr)) {
-          currentCheckDate = yesterdayCheck;
-        }
-
-        // Loop que vai voltando dia por dia para ver até onde vai a sequência ininterrupta
-        while (true) {
-          const dateStr = formatDateKey(currentCheckDate);
+        if (streakDoc.exists()) {
+          const data = streakDoc.data();
           
-          if (savedDates.has(dateStr)) {
-            currentStreak++;
-            // Volta 1 dia no calendário
-            currentCheckDate.setDate(currentCheckDate.getDate() - 1);
+          const todayStr = getCleanDateString(new Date());
+          const ontem = new Date();
+          ontem.setDate(ontem.getDate() - 1);
+          const ontemStr = getCleanDateString(ontem);
+
+          if (data.lastActiveDate === todayStr) {
+            // Já acessou hoje, mantém a sequência salva
+            setStreakCount(data.currentStreak || 0);
+            setIsLitToday(true);
+          } else if (data.lastActiveDate === ontemStr) {
+            // Acessou ontem, mas ainda não hoje. Mantém a contagem esperando o clique
+            setStreakCount(data.currentStreak || 0);
+            setIsLitToday(false);
           } else {
-            // No primeiro dia que ele falhou, o loop para
-            break;
+            // Passou mais de um dia sem acessar, a sequência quebrou
+            setStreakCount(0);
+            setIsLitToday(false);
+            
+            // Opcional: Atualiza o banco indicando que resetou
+            await updateDoc(streakRef, { currentStreak: 0 });
           }
         }
-
-        setStreakCount(currentStreak);
       } catch (error) {
-        console.error("Erro ao calcular a sequência:", error);
+        console.error("Erro ao buscar dados da sequência:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    calculateStreak();
-  }, []);
+    checkStreak();
+  }, [userId]);
+
+  const handleAcenderSequencia = async () => {
+    setUpdating(true);
+    try {
+      const todayStr = getCleanDateString(new Date());
+      const streakRef = doc(db, 'user_streaks', userId);
+      const streakDoc = await getDoc(streakRef);
+
+      let newCount = 1;
+
+      if (streakDoc.exists()) {
+        const data = streakDoc.data();
+        
+        if (data.lastActiveDate === todayStr) {
+          setIsLitToday(true);
+          setUpdating(false);
+          return;
+        }
+
+        const ontem = new Date();
+        ontem.setDate(ontem.getDate() - 1);
+        const ontemStr = getCleanDateString(ontem);
+
+        // Se o último dia ativo foi ontem, soma +1. Caso contrário, recomeça de 1
+        if (data.lastActiveDate === ontemStr) {
+          newCount = (data.currentStreak || 0) + 1;
+        } else {
+          newCount = 1;
+        }
+
+        await updateDoc(streakRef, {
+          currentStreak: newCount,
+          lastActiveDate: todayStr
+        });
+      } else {
+        // Se o documento não existe na coleção, cria o primeiro dia
+        await setDoc(streakRef, {
+          currentStreak: 1,
+          lastActiveDate: todayStr
+        });
+      }
+
+      setStreakCount(newCount);
+      setIsLitToday(true);
+    } catch (error) {
+      console.error("Erro ao atualizar a sequência:", error);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#F4F9FF] to-[#FFFFFF]">
+        <Loader2 className="w-8 h-8 text-[#3B429F] animate-spin mb-4" />
+        <p className="text-gray-500 font-light text-sm">Carregando sua constância...</p>
+      </div>
+    );
+  }
 
   return (
-    <div 
-      className="min-h-screen pt-28 pb-12 px-6 flex flex-col items-center relative bg-cover bg-center" 
-      style={{ backgroundImage: "url('/src/imagens/imagens/fundoplanta.png')" }}
-    >
-      {/* Camada de desfoque sutil sobre o fundo */}
-      <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px]"></div>
-
-      <div className="relative z-10 w-full max-w-3xl flex flex-col items-center">
-        
-        {/* Link para Voltar */}
-        <div className="w-full text-left mb-6">
-          <Link to="/diario" className="inline-flex items-center text-gray-600 hover:text-[#3B429F] transition-colors group">
-            <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
-            Voltar ao diário
-          </Link>
-        </div>
-
-        {/* Card Principal da Sequência */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-full bg-white/80 backdrop-blur-md rounded-[40px] p-8 md:p-12 shadow-2xl border border-white/50 text-center flex flex-col items-center gap-6"
+    <div className="min-h-screen pt-28 pb-12 px-6 bg-gradient-to-tr from-[#E6F0FA] via-[#F4F9FF] to-[#FFFFFF] flex flex-col items-center justify-center">
+      
+      <div className="w-full max-w-xl flex flex-col">
+        <button 
+          onClick={() => navigate('/')} 
+          className="inline-flex items-center text-gray-500 hover:text-[#3B429F] mb-8 transition-colors group self-start text-sm font-medium"
         >
-          {loading ? (
-            <div className="py-12 flex flex-col items-center justify-center text-gray-500">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mb-4"></div>
-              <p>Calculando sua constância...</p>
+          <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+          Voltar ao início
+        </button>
+
+        <div className="w-full bg-white border border-gray-100 p-10 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.03)] text-center space-y-8">
+          
+          <div className="inline-flex items-center gap-2 bg-white border border-gray-100 px-4 py-1.5 rounded-full shadow-sm mx-auto">
+            <Sparkles className="w-3.5 h-3.5 text-[#3B429F]" />
+            <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase">Sua Constância</span>
+          </div>
+
+          <div className="flex justify-center">
+            <div className={`w-24 h-24 rounded-3xl flex items-center justify-center border transition-all duration-300 ${
+              isLitToday 
+                ? 'bg-orange-50 border-orange-100 text-orange-500 shadow-sm' 
+                : 'bg-gray-50 border-gray-100 text-gray-300'
+            }`}>
+              <Flame className={`w-12 h-12 ${isLitToday ? 'fill-orange-500/10' : ''}`} />
             </div>
-          ) : (
-            <>
-              <div className="relative">
-                {/* Efeito de brilho atrás da chama se o streak for maior que 0 */}
-                {streakCount > 0 && (
-                  <motion.div 
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    className="absolute inset-0 bg-orange-400/30 blur-3xl rounded-full"
-                  ></motion.div>
-                )}
-                
-                {/* Ícone Dinâmico da Chama */}
-                <motion.div
-                  animate={streakCount > 0 ? { y: [0, -8, 0] } : {}}
-                  transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                  className="relative z-10"
-                >
-                  <Flame 
-                    className={`w-32 h-32 ${streakCount > 0 ? 'text-orange-500 drop-shadow-[0_10px_20px_rgba(249,115,22,0.4)]' : 'text-gray-300'}`} 
-                  />
-                </motion.div>
-              </div>
+          </div>
 
-              {/* Contador de Dias */}
-              <div className="space-y-1">
-                <h1 className="text-6xl md:text-7xl font-serif font-bold text-gray-900">
-                  {streakCount} {streakCount === 1 ? 'Dia' : 'Dias'}
-                </h1>
-                <p className="text-gray-500 text-lg font-light tracking-wide">
-                  {streakCount > 0 ? 'de conexão diária e intimidade com Deus!' : 'Comece sua sequência hoje!'}
-                </p>
-              </div>
+          <div className="space-y-2">
+            <h1 className="text-5xl font-serif font-black text-gray-900 tracking-tight">
+              {streakCount} {streakCount === 1 ? 'Dia' : 'Dias'} de Sequência
+            </h1>
+            <p className="text-gray-400 text-base font-light max-w-sm mx-auto leading-relaxed">
+              {isLitToday 
+                ? 'Excelente! Sua chama de devoção está acesa hoje.' 
+                : 'Marque sua presença diária para manter sua chama de conexão ativa.'}
+            </p>
+          </div>
 
-              <div className="h-px bg-gray-200 w-full my-2"></div>
+          <div className="w-24 h-1 bg-[#3B429F]/10 rounded-full mx-auto" />
 
-              {/* Mensagem Motivacional Baseada nos Dias */}
-              <div className="flex items-center gap-3 bg-white/50 border border-white/80 p-4 rounded-2xl shadow-inner max-w-md">
-                {streakCount >= 7 ? (
-                  <Award className="w-6 h-6 text-yellow-500 shrink-0" />
-                ) : (
-                  <Sparkles className="w-6 h-6 text-orange-400 shrink-0" />
-                )}
-                <p className="text-sm text-gray-700 text-left leading-relaxed font-medium">
-                  {streakCount === 0 && "O primeiro passo é o mais importante. Que tal abrir o diário e conversar com o Criador agora mesmo?"}
-                  {streakCount > 0 && streakCount < 3 && "Excelente começo! A constância é construída um dia de cada vez. Continue firme."}
-                  {streakCount >= 3 && streakCount < 7 && "Você está criando um hábito poderoso! Sinta a presença de Deus guiando os seus dias."}
-                  {streakCount >= 7 && "Incrível! Uma semana inteira dedicada a lembrar-se das obras do Senhor. Você é uma inspiração!"}
-                </p>
-              </div>
+          <div className="max-w-xs mx-auto pt-2">
+            <motion.button
+              disabled={isLitToday || updating}
+              onClick={handleAcenderSequencia}
+              whileHover={!isLitToday && !updating ? { scale: 1.03, backgroundColor: '#313785' } : {}}
+              whileTap={!isLitToday && !updating ? { scale: 0.97 } : {}}
+              className={`w-full group flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-bold text-base transition-all duration-300 ${
+                isLitToday 
+                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-none cursor-default' 
+                  : 'bg-[#3B429F] text-white shadow-xl shadow-[#3B429F]/10 hover:shadow-2xl'
+              }`}
+            >
+              {updating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Confirmando...</span>
+                </>
+              ) : isLitToday ? (
+                <>
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>Presença Confirmada</span>
+                </>
+              ) : (
+                <>
+                  <Flame className="w-5 h-5" />
+                  <span>Acender Sequência</span>
+                </>
+              )}
+            </motion.button>
+          </div>
 
-              {/* Ações Rápidas */}
-              <div className="flex flex-col sm:flex-row gap-4 w-full mt-4 justify-center">
-                <Link 
-                  to="/escrever-no-diario"
-                  className="inline-flex items-center justify-center gap-2 bg-[#3B429F] hover:bg-[#2D3380] text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-md"
-                >
-                  Escrever no Diário
-                </Link>
-                <Link 
-                  to="/calendario"
-                  className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-8 py-4 rounded-2xl font-bold transition-all shadow-sm"
-                >
-                  <Calendar className="w-5 h-5 text-gray-400" />
-                  Ver Calendário
-                </Link>
-              </div>
-            </>
-          )}
-        </motion.div>
+        </div>
       </div>
+
     </div>
   );
 }

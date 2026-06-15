@@ -27,6 +27,7 @@ function App() {
           <Route path="/esqueci-senha" element={<ForgotPassword />} />
           <Route path="/diario" element={<Diario />} />
           <Route path="/escrever-no-diario" element={<DiaryWriting />} /> {/* <-- Nova Rota */}
+          <Route path="/escrever-diario" element={<DiaryWriting />} />
         </Routes>
       </div>
     </BrowserRouter>
