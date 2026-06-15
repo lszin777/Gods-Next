@@ -1,18 +1,32 @@
 // src/pages/Home.jsx
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Heart, ArrowRight, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Heart, ArrowRight, Sparkles, Bell } from 'lucide-react';
 
 // IMPORTAÇÃO CORRETA: Entra na pasta utils e ativa a função
 import { seedDatabase } from '../utils/seedDatabase';
 
-
 export default function Home() {
   const navigate = useNavigate();
+  const [notification, setNotification] = useState(null);
 
-  // Executa o script automaticamente assim que a página é aberta
+  // Sistema de Notificação Inteligente para os dias de Culto
+  useEffect(() => {
+    const hoje = new Date();
+    const diaSemana = hoje.getDay(); // 0 = Domingo, 1 = Segunda... 6 = Sábado
 
+    const rotinaCultos = {
+      3: { mensagem: "Hoje temos Culto de Oração!", horario: "15:00h" },
+      4: { mensagem: "Hoje temos Culto de Ensino!", horario: "19:30h" },
+      6: { mensagem: "Hoje é dia de Culto nas Casas! Procure seu Pequeno Grupo.", horario: "Noite" },
+      0: { mensagem: "Hoje temos nossa Celebração de Domingo!", horario: "10:00h" }
+    };
+
+    if (rotinaCultos[diaSemana]) {
+      setNotification(rotinaCultos[diaSemana]);
+    }
+  }, []);
 
   // Variantes de animação premium
   const containerVariants = {
@@ -37,13 +51,41 @@ export default function Home() {
 
       <div className="relative z-10 max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-4 items-center">
         
-        {/* TEXTOS */}
+        {/* TEXTOS E NOTIFICAÇÃO */}
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           className="lg:col-span-7 space-y-10"
         >
+          {/* BANNER DE NOTIFICAÇÃO DE CULTO DINÂMICO */}
+          <AnimatePresence>
+            {notification && (
+              <motion.div
+                variants={itemVariants}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="w-full max-w-xl"
+              >
+                <div className="bg-gradient-to-r from-[#3B429F] to-[#2D3380] text-white p-4 rounded-2xl shadow-xl shadow-[#3B429F]/10 flex items-center justify-between border border-indigo-400/20">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/10 rounded-xl">
+                      <Bell className="w-5 h-5 text-amber-300 fill-amber-300/20" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold tracking-wider text-indigo-200 uppercase">Aviso da Igreja</p>
+                      <h4 className="text-sm font-medium font-serif text-white">{notification.mensagem}</h4>
+                    </div>
+                  </div>
+                  <div className="bg-white/20 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap">
+                    ⏰ {notification.horario}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <motion.div variants={itemVariants} className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-md border border-white px-4 py-1.5 rounded-full shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-[#3B429F]" />
             <span className="text-[10px] font-bold text-gray-500 tracking-[0.2em] uppercase">Experiência Devocional</span>
