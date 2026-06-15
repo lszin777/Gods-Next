@@ -1,3 +1,4 @@
+// src/App.jsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -9,10 +10,11 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import Diario from './pages/Diario';
-import DiaryWriting from './pages/DiaryWriting'; // <-- Importe aqui
+import DiaryWriting from './pages/DiaryWriting'; 
 import DiaryHistory from './pages/DiaryHistory';
 
-
+// 1. IMPORTAÇÃO DA NOVA PÁGINA DE PERFIL
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -29,9 +31,12 @@ function App() {
           <Route path="/cadastro" element={<Register />} />
           <Route path="/esqueci-senha" element={<ForgotPassword />} />
           <Route path="/diario" element={<Diario />} />
-          <Route path="/escrever-no-diario" element={<DiaryWriting />} /> {/* <-- Nova Rota */}
+          <Route path="/escrever-no-diario" element={<DiaryWriting />} /> 
           <Route path="/escrever-diario" element={<DiaryWriting />} />
           <Route path="/historico-diario" element={<DiaryHistory />} />
+          
+          {/* 2. ADIÇÃO DA ROTA DO PERFIL */}
+          <Route path="/perfil" element={<Profile />} />
         </Routes>
       </div>
     </BrowserRouter>

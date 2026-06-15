@@ -1,3 +1,4 @@
+// src/components/Navbar.jsx
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,7 +39,7 @@ export default function Navbar() {
         <span className="text-[#3B429F]">God's</span> Next
       </Link>
 
-      {/* LINKS CENTRALIZADOS (OPCIONAL/ADAPTE SE PRECISAR) */}
+      {/* LINKS CENTRALIZADOS */}
       <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
         <Link to="/diario" className="hover:text-[#3B429F] transition-colors flex items-center gap-1">
           <BookOpen className="w-4 h-4" /> Diário
@@ -48,6 +49,10 @@ export default function Navbar() {
         </Link>
         <Link to="/sequencia" className="hover:text-[#3B429F] transition-colors flex items-center gap-1">
           <Flame className="w-4 h-4 text-orange-500" /> Sequência
+        </Link>
+        {/* ADICIONADO: Link direto para o perfil na barra principal (opcional) */}
+        <Link to="/perfil" className="hover:text-[#3B429F] transition-colors flex items-center gap-1">
+          <User className="w-4 h-4 text-indigo-500" /> Perfil
         </Link>
       </div>
 
@@ -90,6 +95,18 @@ export default function Navbar() {
                       {user.email}
                     </div>
                     
+                    {/* ADICIONADO: Opção "Meu Perfil" dentro do Menu Dropdown */}
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate('/perfil');
+                      }}
+                      className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 flex items-center gap-2 font-medium transition-colors text-left"
+                    >
+                      <User className="w-4 h-4 text-[#3B429F]" />
+                      Meu Perfil
+                    </button>
+
                     <button
                       onClick={handleLogout}
                       className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium transition-colors text-left"
