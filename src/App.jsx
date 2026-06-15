@@ -10,6 +10,9 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import Diario from './pages/Diario';
 import DiaryWriting from './pages/DiaryWriting'; // <-- Importe aqui
+import DiaryHistory from './pages/DiaryHistory';
+
+
 
 function App() {
   return (
@@ -28,6 +31,7 @@ function App() {
           <Route path="/diario" element={<Diario />} />
           <Route path="/escrever-no-diario" element={<DiaryWriting />} /> {/* <-- Nova Rota */}
           <Route path="/escrever-diario" element={<DiaryWriting />} />
+          <Route path="/historico-diario" element={<DiaryHistory />} />
         </Routes>
       </div>
     </BrowserRouter>

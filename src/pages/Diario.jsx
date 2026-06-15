@@ -1,5 +1,6 @@
+// src/pages/Diario.jsx
 import { motion } from 'framer-motion';
-import { PenTool, Lock } from 'lucide-react';
+import { PenTool, Lock, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Diario() {
@@ -44,7 +45,7 @@ export default function Diario() {
           />
         </motion.div>
 
-        {/* Lado Direito - Textos Informativos e Ação */}
+        {/* Lado Direito - Textos Informativos e Ações */}
         <div className="w-full md:w-1/2 flex flex-col items-start text-left">
           <h2 className="font-serif text-3xl md:text-4xl text-gray-900 mb-2">
             Escreva. Reflita. Cresça
@@ -65,17 +66,32 @@ export default function Diario() {
             </p>
           </div>
 
-          {/* Link de Navegação para a Tela de Escrita */}
-          <Link to="/escrever-no-diario" className="w-full md:w-auto">
-            <motion.button
-              whileHover={{ scale: 1.05, backgroundColor: "#313785" }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-3 bg-[#3B429F] text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all w-full justify-center"
-            >
-              <PenTool className="w-5 h-5" />
-              Escrever no diário
-            </motion.button>
-          </Link>
+          {/* BLOCO DE BOTÕES DE NAVEGAÇÃO */}
+          <div className="w-full flex flex-col gap-4">
+            {/* Link de Navegação para a Tela de Escrita */}
+            <Link to="/escrever-no-diario" className="w-full">
+              <motion.button
+                whileHover={{ scale: 1.02, backgroundColor: "#313785" }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-3 bg-[#3B429F] text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all w-full justify-center"
+              >
+                <PenTool className="w-5 h-5" />
+                Escrever no diário
+              </motion.button>
+            </Link>
+
+            {/* NOVO: Link de Navegação para o Histórico de Anotações */}
+            <Link to="/historico-diario" className="w-full">
+              <motion.button
+                whileHover={{ scale: 1.02, backgroundColor: "rgba(59, 66, 159, 0.08)" }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-3 bg-transparent text-[#3B429F] border-2 border-[#3B429F]/30 px-8 py-3.5 rounded-xl font-semibold text-base transition-all w-full justify-center"
+              >
+                <BookOpen className="w-4 h-4" />
+                Ver histórico de reflexões
+              </motion.button>
+            </Link>
+          </div>
         </div>
       </motion.div>
 

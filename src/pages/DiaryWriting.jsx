@@ -12,11 +12,25 @@ export default function DiaryWriting() {
   const [selectedVerse, setSelectedVerse] = useState(null);
   const [diaryText, setDiaryText] = useState('');
 
-  const userId = localStorage.getItem('user_id') || 'usuario_teste_devocional';
+  const userId = localStorage.getItem('user_id') || 'O7bDCY0Y4wXBBEuQzttKLblerco2';
 
   const getCleanDateString = (date) => {
     const d = new Date(date);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  // Função para mapear o valor técnico do localStorage para os filtros desejados por você
+  const obterLabelSentimento = (savedMood) => {
+    if (!savedMood) return "Proximo de Deus";
+    
+    const moodLower = savedMood.toLowerCase().trim();
+
+    if (moodLower.includes("proximo")) return "Proximo de Deus";
+    if (moodLower.includes("distante")) return "Distante";
+    if (moodLower.includes("reconexao") || moodLower.includes("reconexão")) return "Reconexão";
+    if (moodLower.includes("ajuda") || moodLower.includes("preciso")) return "Preciso de ajuda";
+
+    return "Proximo de Deus"; // Fallback de segurança
   };
 
   useEffect(() => {
@@ -60,21 +74,28 @@ export default function DiaryWriting() {
     setSaving(true);
     try {
       const todayStr = getCleanDateString(new Date());
-      // Salva em uma coleção unificada de registros diários por ID único de data
+      // Ajustado o padrão de ID do documento para seguir o formato que está no seu Firebase
       const docId = `${userId}_${todayStr}`;
-      const diaryRef = doc(db, 'user_diaries', docId);
+      
+      // ALTERADO: Apontando para a coleção correta 'diary_records' vista no seu console
+      const diaryRef = doc(db, 'diary_records', docId);
 
+      const rawMood = localStorage.getItem('user_mood');
+      const moodFormatado = obterLabelSentimento(rawMood);
+
+      // ALTERADO: Estruturação exata combinando com os campos do seu Firestore
       await setDoc(diaryRef, {
-        userId,
-        date: todayStr,
-        text: diaryText,
-        verse: selectedVerse?.verse || "",
-        reference: selectedVerse?.reference || "",
-        timestamp: new Date()
+        userId: userId,
+        dateKey: todayStr,              // campo 'dateKey' em vez de 'date'
+        diary: diaryText,               // campo 'diary' em vez de 'text'
+        mood: moodFormatado,            // Inserindo o sentimento formatado para o filtro
+        verse: selectedVerse?.verse || "Lembre-se das coisas que o Senhor fez por você.",
+        reference: selectedVerse?.reference || "1 Samuel 12:24",
+        createdAt: new Date()           // Mantendo compatibilidade com o timestamp
       });
 
       alert("Devocional guardado com sucesso!");
-      navigate('/calendario'); // Redireciona para o calendário para ver o registro
+      navigate('/diario'); // Redireciona de volta para a tela principal do diário
     } catch (error) {
       console.error("Erro ao guardar devocional:", error);
       alert("Houve um erro ao salvar na nuvem.");
@@ -139,24 +160,3 @@ export default function DiaryWriting() {
     </div>
   );
 }
-
-
-
-
-
-{/*
-  
-  rules_version = '2';
-
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /diary_records/{document} {
-      allow read, write: if request.auth != null;
-    }
-  }
-} 
-  */}
-
-
-
-

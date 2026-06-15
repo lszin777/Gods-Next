@@ -31,7 +31,8 @@ export default function Calendar() {
 
   const daysOfWeek = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
-  const userId = localStorage.getItem('user_id') || 'usuario_teste_devocional';
+  // AJUSTADO: Mantendo consistência com o ID real do seu banco de dados
+  const userId = localStorage.getItem('user_id') || 'O7bDCY0Y4wXBBEuQzttKLblerco2';
 
   const formatDateKey = (date) => {
     const y = date.getFullYear();
@@ -46,14 +47,17 @@ export default function Calendar() {
       try {
         const datesWithChamas = new Set();
 
+        // CORRIGIDO: Apontando para 'diary_records' ao invés de 'user_diaries'
         const diaryQuery = query(
-          collection(db, "user_diaries"),
+          collection(db, "diary_records"),
           where("userId", "==", userId)
         );
         const diarySnapshot = await getDocs(diaryQuery);
         diarySnapshot.forEach((doc) => {
-          if (doc.data().date) {
-            datesWithChamas.add(doc.data().date);
+          const data = doc.data();
+          // CORRIGIDO: Verificando o campo 'dateKey' presente no seu Firestore
+          if (data.dateKey) {
+            datesWithChamas.add(data.dateKey);
           }
         });
 
@@ -82,7 +86,8 @@ export default function Calendar() {
       const dateKey = formatDateKey(selectedDate);
 
       try {
-        const docRef = doc(db, "user_diaries", `${userId}_${dateKey}`);
+        // CORRIGIDO: Apontando para 'diary_records' e usando a estrutura de ID correta
+        const docRef = doc(db, "diary_records", `${userId}_${dateKey}`);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -164,7 +169,7 @@ export default function Calendar() {
                                    dateItem.getMonth() === selectedDate.getMonth() && 
                                    dateItem.getFullYear() === selectedDate.getFullYear();
 
-                // CORREÇÃO AUXILIAR: Verifica se este item corresponde estritamente ao dia de HOJE real
+                // Verifica se este item corresponde estritamente ao dia de HOJE real
                 const isRealToday = dateItem.getDate() === today.getDate() && 
                                     dateItem.getMonth() === today.getMonth() && 
                                     dateItem.getFullYear() === today.getFullYear();
@@ -183,7 +188,7 @@ export default function Calendar() {
                       ${isSelected 
                         ? 'bg-[#3B429F] text-white shadow-lg shadow-[#3B429F]/30 scale-105' 
                         : isRealToday
-                          ? 'bg-indigo-50 text-[#3B429F] border-2 border-[#3B429F]/30 font-bold' // Destaque sutil para o dia de hoje quando não selecionado
+                          ? 'bg-indigo-50 text-[#3B429F] border-2 border-[#3B429F]/30 font-bold' 
                           : 'hover:bg-gray-50 text-gray-700'
                       }
                     `}
@@ -231,8 +236,9 @@ export default function Calendar() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-6"
               >
+                {/* CORRIGIDO: Mudou de diaryRecord.text para diaryRecord.diary */}
                 <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap font-light italic bg-white/40 p-4 rounded-2xl border border-white/60">
-                  "{diaryRecord.text}"
+                  "{diaryRecord.diary}"
                 </p>
 
                 <div className="mt-4 bg-white/60 rounded-2xl p-5 border border-white/80 shadow-inner">
