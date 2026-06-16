@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 
+
 import Info from './pages/Info';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -18,6 +19,7 @@ import Diario from './pages/Diario';
 import DiaryWriting from './pages/DiaryWriting'; 
 import DiaryHistory from './pages/DiaryHistory';
 import Profile from './pages/Profile';
+import Chatbot from './components/Chatbot';
 
 // COMPONENTE DE PROTEÇÃO DE ROTA
 // Se o usuário não estiver logado, ele é mandado para o Login.
@@ -114,6 +116,7 @@ function App() {
               <Profile />
             </ProtectedRoute>
           } />
+          <Route path="/conselheiro" element={<Chatbot />} />
         </Routes>
       </div>
     </BrowserRouter>

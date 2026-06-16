@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, User, Flame, Calendar, BookOpen, Menu, X, Info } from 'lucide-react'; // Adicionado o ícone Info
+import { LogOut, User, Flame, Calendar, BookOpen, Menu, X, Info, Bot } from 'lucide-react'; // Ícone Bot adicionado aqui
 
 // Importações do Firebase para verificar o estado do login
 import { auth } from '../firebase';
@@ -52,10 +52,13 @@ export default function Navbar() {
         <Link to="/sequencia" className="hover:text-[#3B429F] transition-colors flex items-center gap-1">
           <Flame className="w-4 h-4 text-orange-500" /> Sequência
         </Link>
+        {/* NOVO LINK DO CONSELHEIRO VIRTUAL (DESKTOP) */}
+        <Link to="/conselheiro" className="hover:text-[#3B429F] transition-colors flex items-center gap-1">
+          <Bot className="w-4 h-4 text-[#3B429F]" /> Conselheiro
+        </Link>
         <Link to="/perfil" className="hover:text-[#3B429F] transition-colors flex items-center gap-1">
           <User className="w-4 h-4 text-indigo-500" /> Perfil
         </Link>
-        {/* ALTERAÇÃO: Adicionado link de Informações para Desktop */}
         <Link to="/info" className="hover:text-[#3B429F] transition-colors flex items-center gap-1">
           <Info className="w-4 h-4 text-teal-500" /> Informações
         </Link>
@@ -190,6 +193,14 @@ export default function Navbar() {
                 >
                   <Flame className="w-5 h-5 text-orange-500" /> Sequência
                 </Link>
+                {/* NOVO LINK DO CONSELHEIRO VIRTUAL (MOBILE) */}
+                <Link
+                  to="/conselheiro"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 text-gray-600 font-medium text-lg hover:text-[#3B429F]"
+                >
+                  <Bot className="w-5 h-5 text-[#3B429F]" /> Conselheiro
+                </Link>
                 <Link
                   to="/perfil"
                   onClick={() => setMobileOpen(false)}
@@ -197,7 +208,6 @@ export default function Navbar() {
                 >
                   <User className="w-5 h-5 text-indigo-500" /> Perfil
                 </Link>
-                {/* ALTERAÇÃO: Adicionado link de Informações para Mobile */}
                 <Link
                   to="/info"
                   onClick={() => setMobileOpen(false)}
