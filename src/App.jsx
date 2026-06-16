@@ -4,7 +4,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 
-
 import Info from './pages/Info';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -22,8 +21,6 @@ import Profile from './pages/Profile';
 import Chatbot from './components/Chatbot';
 
 // COMPONENTE DE PROTEÇÃO DE ROTA
-// Se o usuário não estiver logado, ele é mandado para o Login.
-// O 'key={user?.uid}' força o React a destruir e recriar a página do zero ao mudar de conta!
 function ProtectedRoute({ user, loading, children }) {
   if (loading) {
     return (
@@ -37,7 +34,6 @@ function ProtectedRoute({ user, loading, children }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Passando o uid como chave força a reconstrução completa dos dados específicos daquele usuário
   return <div key={user.uid}>{children}</div>;
 }
 
@@ -106,11 +102,14 @@ function App() {
               <MoodSelection />
             </ProtectedRoute>
           } />
-          <Route path="/verso/:mood" element={
+          
+          {/* ✅ CORRIGIDO: Alterado de /verso/:mood para /versiculo/:mood */}
+          <Route path="/versiculo/:mood" element={
             <ProtectedRoute user={user} loading={loading}>
               <VerseDisplay />
             </ProtectedRoute>
           } />
+          
           <Route path="/perfil" element={
             <ProtectedRoute user={user} loading={loading}>
               <Profile />
@@ -122,10 +121,6 @@ function App() {
               <Chatbot user={user} />
             </ProtectedRoute>
           } />
-
-
-
-          <Route path="/conselheiro" element={<Chatbot />} />
         </Routes>
       </div>
     </BrowserRouter>

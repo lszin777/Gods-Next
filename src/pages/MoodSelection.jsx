@@ -48,18 +48,21 @@ export default function MoodSelection() {
   };
 
   const handleSelect = (moodId) => {
-    // 1. Guarda o humor escolhido no navegador
+    // 1. Encontra os dados textuais corretos do humor selecionado
+    const selectedOption = options.find(opt => opt.id === moodId);
+    const moodTitle = selectedOption ? selectedOption.title : moodId;
+
+    // 2. ✅ GUARDA NO LOCALSTORAGE PARA A PÁGINA DE REFLEXÃO/DIÁRIO COLETAR
     localStorage.setItem('user_mood', moodId);
+    localStorage.setItem('user_mood_title', moodTitle); 
     
-    // 2. ✅ Corrigido o fluxo: Redireciona para a rota dinâmica do VerseDisplay passando o parâmetro correto.
-    // Se o seu app usar outra rota como padrão (ex: /versiculo/:mood), altere o termo abaixo correspondente ao seu App.jsx
+    // 3. Redireciona para a rota do versículo correspondente
     navigate(`/versiculo/${moodId}`); 
   };
 
   return (
     <div 
       className="min-h-screen pt-28 pb-12 px-6 flex flex-col items-center relative bg-cover bg-center" 
-      /* ✅ Ajustado para a pasta public: removido o prefixo /src */
       style={{ backgroundImage: "url('/imagens/imagens/fundoplanta.png')" }}
     >
       <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px]"></div>

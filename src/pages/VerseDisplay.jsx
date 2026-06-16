@@ -38,7 +38,7 @@ const verseData = {
   reconexar: {
     title: "Tentando se reconectar",
     verses: [
-      { text: "“Desde a época dos seus antepassados vocês se desviaram dos meus decretos e não os obedeceram. Voltem para mim, e eu voltararei para vocês”, diz o Senhor dos Exércitos.", ref: "— Malaquias 3:7" },
+      { text: "“Desde a época dos seus antepassados vocês se desviaram dos meus decretos e não os obedeceram. Voltem para mim, e eu voltarei para vocês”, diz o Senhor dos Exércitos.", ref: "— Malaquias 3:7" },
       { text: "“E, levantando-se, foi para seu pai. Quando ainda estava longe, seu pai o viu, encheu-se de compaixão e, correndo, lançou-se-lhe ao pescoço e o beijou.”", ref: "— Lucas 15:20" },
       { text: "“Conheçamos e prossigamos em conhecer o Senhor. A sua vinda é certa como a alvorada; ele virá a nós como a chuva, como a chuva da primavera que rega a terra.”", ref: "— Oséias 6:3" },
       { text: "“Se confessarmos os nossos pecados, ele é fiel e justo para nos perdoar os pecados e nos purificar de toda injustiça.”", ref: "— 1 João 1:9" },
@@ -54,15 +54,15 @@ const verseData = {
     title: "Preciso de ajuda",
     verses: [
       { text: "“Deus é o nosso refúgio e a nossa fortaleza, auxílio sempre presente na adversidade. Por isso não temeremos, ainda que a terra trema e os montes afundem no coração do mar.”", ref: "— Salmos 46:1-2" },
-      { text: "“Não tema, pois estou com você; não tenha medo, pois sou o seu Deus. Eu o fortalecererei e o ajudarei; eu o segurarei com a minha mão direita vitoriosa.”", ref: "— Isaías 41:10" },
+      { text: "“Não tema, pois estou com você; não tenha medo, pois sou o seu Deus. Eu o fortalecerei e o ajudarei; eu o segurarei com a minha mão direita vitoriosa.”", ref: "— Isaías 41:10" },
       { text: "“Não andem ansiosos por coisa alguma, mas em tudo, pela oração e súplicas, e com ação de graças, apresentem seus pedidos a Deus. E a paz de Deus guardará o coração de vocês.”", ref: "— Filipenses 4:6-7" },
       { text: "“Elevo os olhos para os montes: de onde me virá o socorro? O meu socorro vem do Senhor, que fez os céus e a terra.”", ref: "— Salmos 121:1-2" },
-      { text: "“Mas ele me disse: 'Minha graça é suficiente para você, pois o meu poder se aperfeiçoa na fraqueza'. Portanto, eu me gloriarei ainda mais alegremente em minhas fraquezas.”", ref: "— 2 Coríntios 12:9" },
+      { text: "“Mas ele me disse: 'Minha graça é suficiente para você, pois o meu poder se aperfeiçoa na fraqueza'. Portanto, eu me gloriarei ainda mais alegremente in minhas fraquezas.”", ref: "— 2 Coríntios 12:9" },
       { text: "“O Senhor é bom, um refúgio em tempos de angústia. Ele protege os que nele confiam.”", ref: "— Naum 1:7" },
       { text: "“Clamou este pobre, e o Senhor o ouviu; e o livrou de todas as suas angústias.”", ref: "— Salmos 34:6" },
       { text: "“Entregue o seu caminho ao Senhor; confie nele, e ele agirá.”", ref: "— Salmos 37:5" },
       { text: "“Ele dá força ao cansado e aumenta o poder do que está sem forças.”", ref: "— Isaías 40:29" },
-      { text: "“Entregue as suas preocupações ao Senhor, e ele o susterá; jamais permitirá que o justo venha a cair.”", ref: "— Salmos 55:22" }
+      { text: "...“Entregue as suas preocupações ao Senhor, e ele o susterá; jamais permitirá que o justo venha a cair.”", ref: "— Salmos 55:22" }
     ]
   }
 };
@@ -70,25 +70,20 @@ const verseData = {
 export default function VerseDisplay() {
   const { mood } = useParams();
   
-  // Garante compatibilidade caso venha 'reconexao' ou 'reconexar' do link
   const currentMood = mood === 'reconexao' ? 'reconexar' : mood;
   const categoryData = verseData[currentMood] || verseData['proximo'];
 
-  // Estado que armazenará o versículo escolhido no sorteio
   const [selectedVerse, setSelectedVerse] = useState(null);
 
   useEffect(() => {
-    // Lógica do sorteio dinâmico (Roda sempre que o usuário entra ou altera o humor)
     const list = categoryData.verses;
     const randomIndex = Math.floor(Math.random() * list.length);
     setSelectedVerse(list[randomIndex]);
   }, [mood, currentMood]);
 
-  // Evita que a página pisque sem conteúdo enquanto o sorteio é processado no milissegundo inicial
   if (!selectedVerse) return null;
 
   return (
-    /* ✅ Ajustado para a pasta public: removido o prefixo /src */
     <div className="min-h-screen pt-24 px-6 flex items-center justify-center bg-cover bg-center" style={{ backgroundImage: "url('/imagens/imagens/fundoplanta.png')" }}>
       <div className="absolute inset-0 bg-white/70 backdrop-blur-sm"></div>
 

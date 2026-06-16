@@ -38,9 +38,9 @@ export default function Diario() {
           className="w-full md:w-1/2 flex justify-center"
         >
           <img 
-            src="/src/imagens/imagens/bibliadiario.png" 
+            src="/src/imagens/bibliadiario.png" 
             alt="Bíblia Diário" 
-            className="w-full max-w-[350px] object-contain drop-shadow-2xl"
+            className="w-full max-w-[550px] object-contain drop-shadow-2xl"
             onError={(e) => { e.target.src = 'https://via.placeholder.com/500x400?text=Bíblia+Diário' }}
           />
         </motion.div>
