@@ -1,20 +1,19 @@
 // src/pages/Streak.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../firebase';
+import { db, auth } from '../firebase'; // Importado o auth para pegar o usuário real
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth'; // Monitor em tempo real
 import { ArrowLeft, Flame, Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Streak() {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null); // Estado para o usuário autenticado
   const [loading, setLoading] = useState(true);
   const [streakCount, setStreakCount] = useState(0);
   const [isLitToday, setIsLitToday] = useState(false);
   const [updating, setUpdating] = useState(false);
-
-  // ID de usuário padrão para testes locais
-  const userId = localStorage.getItem('user_id') || 'usuario_teste_devocional';
 
   // Função auxiliar para gerar strings de data idênticas e seguras
   const getCleanDateString = (date) => {
@@ -22,10 +21,27 @@ export default function Streak() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
+  // Etapa 1: Monitorar qual usuário está logado atualmente
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        // Se de alguma forma cair aqui deslogado, manda para o login
+        navigate('/login');
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
+
+  // Etapa 2: Buscar a sequência do banco de dados baseando-se estritamente no UID do usuário logado
+  useEffect(() => {
+    if (!user) return; // Espera o usuário carregar primeiro
+
     const checkStreak = async () => {
+      setLoading(true); // Garante o carregamento visual ao trocar de conta
       try {
-        const streakRef = doc(db, 'user_streaks', userId);
+        const streakRef = doc(db, 'user_streaks', user.uid); // Alterado para usar o user.uid real
         const streakDoc = await getDoc(streakRef);
 
         if (streakDoc.exists()) {
@@ -37,21 +53,20 @@ export default function Streak() {
           const ontemStr = getCleanDateString(ontem);
 
           if (data.lastActiveDate === todayStr) {
-            // Já acessou hoje, mantém a sequência salva
             setStreakCount(data.currentStreak || 0);
             setIsLitToday(true);
           } else if (data.lastActiveDate === ontemStr) {
-            // Acessou ontem, mas ainda não hoje. Mantém a contagem esperando o clique
             setStreakCount(data.currentStreak || 0);
             setIsLitToday(false);
           } else {
-            // Passou mais de um dia sem acessar, a sequência quebrou
             setStreakCount(0);
             setIsLitToday(false);
-            
-            // Opcional: Atualiza o banco indicando que resetou
             await updateDoc(streakRef, { currentStreak: 0 });
           }
+        } else {
+          // Se o usuário é novo e não tem registro, zera o estado visual
+          setStreakCount(0);
+          setIsLitToday(false);
         }
       } catch (error) {
         console.error("Erro ao buscar dados da sequência:", error);
@@ -61,13 +76,14 @@ export default function Streak() {
     };
 
     checkStreak();
-  }, [userId]);
+  }, [user]); // Dispara toda vez que o objeto 'user' mudar (troca de conta)
 
   const handleAcenderSequencia = async () => {
+    if (!user) return;
     setUpdating(true);
     try {
       const todayStr = getCleanDateString(new Date());
-      const streakRef = doc(db, 'user_streaks', userId);
+      const streakRef = doc(db, 'user_streaks', user.uid); // Alterado para usar o user.uid real
       const streakDoc = await getDoc(streakRef);
 
       let newCount = 1;
@@ -85,7 +101,6 @@ export default function Streak() {
         ontem.setDate(ontem.getDate() - 1);
         const ontemStr = getCleanDateString(ontem);
 
-        // Se o último dia ativo foi ontem, soma +1. Caso contrário, recomeça de 1
         if (data.lastActiveDate === ontemStr) {
           newCount = (data.currentStreak || 0) + 1;
         } else {
@@ -97,7 +112,6 @@ export default function Streak() {
           lastActiveDate: todayStr
         });
       } else {
-        // Se o documento não existe na coleção, cria o primeiro dia
         await setDoc(streakRef, {
           currentStreak: 1,
           lastActiveDate: todayStr
@@ -113,7 +127,7 @@ export default function Streak() {
     }
   };
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#F4F9FF] to-[#FFFFFF]">
         <Loader2 className="w-8 h-8 text-[#3B429F] animate-spin mb-4" />

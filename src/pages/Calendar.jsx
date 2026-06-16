@@ -2,24 +2,25 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Flame } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flame, Loader2 } from 'lucide-react';
 
-// Importações necessárias para buscar dados do Firebase
+// Importações do Firebase
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { db, auth } from '../firebase'; 
 
 export default function Calendar() {
   const navigate = useNavigate();
-  
-  // CORREÇÃO: Inicializa com a data real do sistema (Hoje)
+  const [user, setUser] = useState(null);
+  const [globalLoading, setGlobalLoading] = useState(true);
+
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(today); 
   const [selectedDate, setSelectedDate] = useState(today);
   
-  // Estados para armazenar os dados vindos do Firestore
   const [diaryRecord, setDiaryRecord] = useState(null);
   const [loadingRecord, setLoadingRecord] = useState(false);
-  const [savedDates, setSavedDates] = useState([]); // Guarda os dias que têm chamas/registros ativos
+  const [savedDates, setSavedDates] = useState([]); 
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -31,9 +32,6 @@ export default function Calendar() {
 
   const daysOfWeek = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
-  // AJUSTADO: Mantendo consistência com o ID real do seu banco de dados
-  const userId = localStorage.getItem('user_id') || 'O7bDCY0Y4wXBBEuQzttKLblerco2';
-
   const formatDateKey = (date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -41,27 +39,38 @@ export default function Calendar() {
     return `${y}-${m}-${d}`;
   };
 
-  // 1. Busca os registros de chamas (Diários E Botão de Sequência)
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        navigate('/login');
+      }
+      setGlobalLoading(false);
+    });
+    return () => unsubscribe();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+
     const fetchAllMonthChamas = async () => {
       try {
         const datesWithChamas = new Set();
 
-        // CORRIGIDO: Apontando para 'diary_records' ao invés de 'user_diaries'
         const diaryQuery = query(
           collection(db, "diary_records"),
-          where("userId", "==", userId)
+          where("userId", "==", user.uid)
         );
         const diarySnapshot = await getDocs(diaryQuery);
         diarySnapshot.forEach((doc) => {
           const data = doc.data();
-          // CORRIGIDO: Verificando o campo 'dateKey' presente no seu Firestore
           if (data.dateKey) {
             datesWithChamas.add(data.dateKey);
           }
         });
 
-        const streakRef = doc(db, 'user_streaks', userId);
+        const streakRef = doc(db, 'user_streaks', user.uid);
         const streakDoc = await getDoc(streakRef);
         if (streakDoc.exists()) {
           const streakData = streakDoc.data();
@@ -72,26 +81,32 @@ export default function Calendar() {
         
         setSavedDates(Array.from(datesWithChamas));
       } catch (error) {
-        console.error("Erro ao buscar as chamas ativas do mês:", error);
+        console.error("Erro ao buscar as chamas ativas:", error);
       }
     };
 
     fetchAllMonthChamas();
-  }, [currentDate, userId]);
+  }, [currentDate, user]);
 
-  // 2. Busca o texto do diário específico do dia selecionado
   useEffect(() => {
+    if (!user) return;
+
     const fetchDayRecord = async () => {
       setLoadingRecord(true);
       const dateKey = formatDateKey(selectedDate);
 
       try {
-        // CORRIGIDO: Apontando para 'diary_records' e usando a estrutura de ID correta
-        const docRef = doc(db, "diary_records", `${userId}_${dateKey}`);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          setDiaryRecord(docSnap.data());
+        // Busca com query dinâmica (não depende do ID do documento)
+        const q = query(
+          collection(db, "diary_records"),
+          where("userId", "==", user.uid),
+          where("dateKey", "==", dateKey)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          setDiaryRecord(querySnapshot.docs[0].data());
         } else {
           setDiaryRecord(null);
         }
@@ -104,7 +119,7 @@ export default function Calendar() {
     };
 
     fetchDayRecord();
-  }, [selectedDate, userId]);
+  }, [selectedDate, user]);
 
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
@@ -123,11 +138,19 @@ export default function Calendar() {
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
+  if (globalLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <Loader2 className="w-8 h-8 text-[#3B429F] animate-spin mb-4" />
+        <p className="text-gray-500 font-light text-sm">Organizando seu calendário...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100/60 pt-24 pb-12 px-4 md:px-8 flex justify-center items-center">
       <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-8 items-stretch">
         
-        {/* BLOCO ESQUERDO: O CALENDÁRIO */}
         <div className="flex-1 bg-white rounded-[32px] p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-8">
@@ -163,13 +186,11 @@ export default function Calendar() {
               {daysArray.map((dateItem, index) => {
                 if (!dateItem) return <div key={`empty-${index}`} />;
 
-                // Verifica se este dia da lista é o dia selecionado pelo clique
                 const isSelected = selectedDate && 
                                    dateItem.getDate() === selectedDate.getDate() && 
                                    dateItem.getMonth() === selectedDate.getMonth() && 
                                    dateItem.getFullYear() === selectedDate.getFullYear();
 
-                // Verifica se este item corresponde estritamente ao dia de HOJE real
                 const isRealToday = dateItem.getDate() === today.getDate() && 
                                     dateItem.getMonth() === today.getMonth() && 
                                     dateItem.getFullYear() === today.getFullYear();
@@ -195,14 +216,10 @@ export default function Calendar() {
                   >
                     <span>{dateItem.getDate()}</span>
                     
-                    {/* Chama de devocional */}
                     {hasStreak && (
-                      <Flame 
-                        className={`w-4 h-4 absolute bottom-1.5 ${isSelected ? 'text-orange-300' : 'text-orange-500'}`} 
-                      />
+                      <Flame className={`w-4 h-4 absolute bottom-1.5 ${isSelected ? 'text-orange-300' : 'text-orange-500'}`} />
                     )}
 
-                    {/* Indicador azul discreto para marcar dia de culto fixo da igreja */}
                     {!isSelected && isCultoDay && (
                       <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-[#3B429F] rounded-full" />
                     )}
@@ -213,7 +230,6 @@ export default function Calendar() {
           </div>
         </div>
 
-        {/* BLOCO DIREITO: RESUMO DIÁRIO E AGENDA */}
         <div className="w-full lg:w-[400px] bg-[#EFEBE4] rounded-[32px] p-8 shadow-sm flex flex-col justify-between border border-[#E6E0D5]">
           <div>
             <span className="text-[11px] font-bold tracking-widest text-[#3B429F] uppercase">
@@ -231,12 +247,7 @@ export default function Calendar() {
                 <p className="text-sm">Buscando suas anotações...</p>
               </div>
             ) : diaryRecord ? (
-              <motion.div 
-                initial={{ opacity: 0, y: 5 }} 
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-6"
-              >
-                {/* CORRIGIDO: Mudou de diaryRecord.text para diaryRecord.diary */}
+              <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6">
                 <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap font-light italic bg-white/40 p-4 rounded-2xl border border-white/60">
                   "{diaryRecord.diary}"
                 </p>
@@ -273,10 +284,7 @@ export default function Calendar() {
                   </div>
                 )}
 
-                <button 
-                  onClick={() => navigate('/como-voce-esta')}
-                  className="text-sm font-semibold text-[#3B429F] hover:underline pt-2"
-                >
+                <button onClick={() => navigate('/como-voce-esta')} className="text-sm font-semibold text-[#3B429F] hover:underline pt-2">
                   Escrever meu diário agora
                 </button>
               </div>
@@ -287,7 +295,6 @@ export default function Calendar() {
             God's Next • Sua constância com o Criador
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -1,25 +1,27 @@
 // src/pages/DiaryWriting.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../firebase';
+// IMPORTAÇÃO CORRIGIDA: Adicionamos o auth e as funções de autenticação do Firebase
+import { db, auth } from '../firebase';
 import { collection, getDocs, query, where, doc, setDoc } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 import { ArrowLeft, BookOpen, Loader2, CheckCircle } from 'lucide-react';
 
 export default function DiaryWriting() {
   const navigate = useNavigate();
+  // NOVO ESTADO: Guardar o usuário autenticado real
+  const [user, setUser] = useState(null);
+  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedVerse, setSelectedVerse] = useState(null);
   const [diaryText, setDiaryText] = useState('');
-
-  const userId = localStorage.getItem('user_id') || 'O7bDCY0Y4wXBBEuQzttKLblerco2';
 
   const getCleanDateString = (date) => {
     const d = new Date(date);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
-  // Função para mapear o valor técnico do localStorage para os filtros desejados por você
   const obterLabelSentimento = (savedMood) => {
     if (!savedMood) return "Proximo de Deus";
     
@@ -30,8 +32,21 @@ export default function DiaryWriting() {
     if (moodLower.includes("reconexao") || moodLower.includes("reconexão")) return "Reconexão";
     if (moodLower.includes("ajuda") || moodLower.includes("preciso")) return "Preciso de ajuda";
 
-    return "Proximo de Deus"; // Fallback de segurança
+    return "Proximo de Deus"; 
   };
+
+  // NOVO EFEITO: Monitorar quem está logado de verdade
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        // Se não estiver logado, manda pro login
+        navigate('/login'); 
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
 
   useEffect(() => {
     const fetchVerse = async () => {
@@ -71,31 +86,34 @@ export default function DiaryWriting() {
       return;
     }
 
+    if (!user) {
+      alert("Erro de segurança: Você precisa estar logado para salvar.");
+      return;
+    }
+
     setSaving(true);
     try {
       const todayStr = getCleanDateString(new Date());
-      // Ajustado o padrão de ID do documento para seguir o formato que está no seu Firebase
-      const docId = `${userId}_${todayStr}`;
+      // Agora o ID do documento é criado usando o UID real do usuário logado!
+      const docId = `${user.uid}_${todayStr}`;
       
-      // ALTERADO: Apontando para a coleção correta 'diary_records' vista no seu console
       const diaryRef = doc(db, 'diary_records', docId);
 
       const rawMood = localStorage.getItem('user_mood');
       const moodFormatado = obterLabelSentimento(rawMood);
 
-      // ALTERADO: Estruturação exata combinando com os campos do seu Firestore
       await setDoc(diaryRef, {
-        userId: userId,
-        dateKey: todayStr,              // campo 'dateKey' em vez de 'date'
-        diary: diaryText,               // campo 'diary' em vez de 'text'
-        mood: moodFormatado,            // Inserindo o sentimento formatado para o filtro
+        userId: user.uid,               // SALVANDO O UID VERDADEIRO AQUI
+        dateKey: todayStr,              
+        diary: diaryText,               
+        mood: moodFormatado,            
         verse: selectedVerse?.verse || "Lembre-se das coisas que o Senhor fez por você.",
         reference: selectedVerse?.reference || "1 Samuel 12:24",
-        createdAt: new Date()           // Mantendo compatibilidade com o timestamp
+        createdAt: new Date()           
       });
 
       alert("Devocional guardado com sucesso!");
-      navigate('/diario'); // Redireciona de volta para a tela principal do diário
+      navigate('/diario'); // Confirme se a rota do seu Histórico é '/diario'. Se for outra, mude aqui!
     } catch (error) {
       console.error("Erro ao guardar devocional:", error);
       alert("Houve um erro ao salvar na nuvem.");
@@ -104,11 +122,11 @@ export default function DiaryWriting() {
     }
   };
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#F4F9FF] to-[#FFFFFF]">
         <Loader2 className="w-8 h-8 text-[#3B429F] animate-spin mb-4" />
-        <p className="text-gray-500 font-light text-sm">Preparando um versículo para o seu coração...</p>
+        <p className="text-gray-500 font-light text-sm">Preparando seu ambiente devocional...</p>
       </div>
     );
   }
