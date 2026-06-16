@@ -38,7 +38,7 @@ const verseData = {
   reconexar: {
     title: "Tentando se reconectar",
     verses: [
-      { text: "“Desde a época dos seus antepassados vocês se desviaram dos meus decretos e não os obedeceram. Voltem para mim, e eu voltarei para vocês”, diz o Senhor dos Exércitos.", ref: "— Malaquias 3:7" },
+      { text: "“Desde a época dos seus antepassados vocês se desviaram dos meus decretos e não os obedeceram. Voltem para mim, e eu voltararei para vocês”, diz o Senhor dos Exércitos.", ref: "— Malaquias 3:7" },
       { text: "“E, levantando-se, foi para seu pai. Quando ainda estava longe, seu pai o viu, encheu-se de compaixão e, correndo, lançou-se-lhe ao pescoço e o beijou.”", ref: "— Lucas 15:20" },
       { text: "“Conheçamos e prossigamos em conhecer o Senhor. A sua vinda é certa como a alvorada; ele virá a nós como a chuva, como a chuva da primavera que rega a terra.”", ref: "— Oséias 6:3" },
       { text: "“Se confessarmos os nossos pecados, ele é fiel e justo para nos perdoar os pecados e nos purificar de toda injustiça.”", ref: "— 1 João 1:9" },
@@ -54,7 +54,7 @@ const verseData = {
     title: "Preciso de ajuda",
     verses: [
       { text: "“Deus é o nosso refúgio e a nossa fortaleza, auxílio sempre presente na adversidade. Por isso não temeremos, ainda que a terra trema e os montes afundem no coração do mar.”", ref: "— Salmos 46:1-2" },
-      { text: "“Não tema, pois estou com você; não tenha medo, pois sou o seu Deus. Eu o fortalecerei e o ajudarei; eu o segurarei com a minha mão direita vitoriosa.”", ref: "— Isaías 41:10" },
+      { text: "“Não tema, pois estou com você; não tenha medo, pois sou o seu Deus. Eu o fortalecererei e o ajudarei; eu o segurarei com a minha mão direita vitoriosa.”", ref: "— Isaías 41:10" },
       { text: "“Não andem ansiosos por coisa alguma, mas em tudo, pela oração e súplicas, e com ação de graças, apresentem seus pedidos a Deus. E a paz de Deus guardará o coração de vocês.”", ref: "— Filipenses 4:6-7" },
       { text: "“Elevo os olhos para os montes: de onde me virá o socorro? O meu socorro vem do Senhor, que fez os céus e a terra.”", ref: "— Salmos 121:1-2" },
       { text: "“Mas ele me disse: 'Minha graça é suficiente para você, pois o meu poder se aperfeiçoa na fraqueza'. Portanto, eu me gloriarei ainda mais alegremente em minhas fraquezas.”", ref: "— 2 Coríntios 12:9" },
@@ -88,7 +88,8 @@ export default function VerseDisplay() {
   if (!selectedVerse) return null;
 
   return (
-    <div className="min-h-screen pt-24 px-6 flex items-center justify-center bg-cover bg-center" style={{ backgroundImage: "url('/src/imagens/imagens/fundoplanta.png')" }}>
+    /* ✅ Ajustado para a pasta public: removido o prefixo /src */
+    <div className="min-h-screen pt-24 px-6 flex items-center justify-center bg-cover bg-center" style={{ backgroundImage: "url('/imagens/imagens/fundoplanta.png')" }}>
       <div className="absolute inset-0 bg-white/70 backdrop-blur-sm"></div>
 
       <div className="relative z-10 w-full max-w-4xl flex items-start">

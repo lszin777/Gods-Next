@@ -51,14 +51,16 @@ export default function MoodSelection() {
     // 1. Guarda o humor escolhido no navegador
     localStorage.setItem('user_mood', moodId);
     
-    // 2. Vai para a tela onde o diário/versículo será exibido
-    navigate('/escrever-diario'); 
+    // 2. ✅ Corrigido o fluxo: Redireciona para a rota dinâmica do VerseDisplay passando o parâmetro correto.
+    // Se o seu app usar outra rota como padrão (ex: /versiculo/:mood), altere o termo abaixo correspondente ao seu App.jsx
+    navigate(`/versiculo/${moodId}`); 
   };
 
   return (
     <div 
       className="min-h-screen pt-28 pb-12 px-6 flex flex-col items-center relative bg-cover bg-center" 
-      style={{ backgroundImage: "url('/src/imagens/imagens/fundoplanta.png')" }}
+      /* ✅ Ajustado para a pasta public: removido o prefixo /src */
+      style={{ backgroundImage: "url('/imagens/imagens/fundoplanta.png')" }}
     >
       <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px]"></div>
 
