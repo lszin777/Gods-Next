@@ -150,7 +150,7 @@ export default function Home() {
           >
             <div className="absolute inset-0 bg-[#3B429F]/10 blur-[80px] rounded-full scale-75"></div>
             <img 
-              src="/src/imagens/capajesus.png" 
+              src="/public/imagens/capajesus.png" 
               alt="Jesus" 
               className="relative z-10 w-full max-w-[500px] h-auto object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.1)]"
             />
