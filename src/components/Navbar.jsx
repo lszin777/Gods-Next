@@ -80,7 +80,7 @@ export default function Navbar() {
                   alt="Foto do Usuário"
                   className="w-full h-full object-cover rounded-full"
                   onError={(e) => {
-                    e.target.src = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100";
+                    e.target.src = "./src/imagens/logo.png";
                   }}
                 />
               </motion.button>

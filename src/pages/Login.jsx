@@ -53,7 +53,7 @@ export default function Login() {
       >
         <div className="text-center mb-8">
           <h1 className="font-serif text-3xl md:text-4xl text-gray-900 mb-2">
-            Acessee a sua conta
+            Acesse a sua conta
           </h1>
           <p className="text-gray-600 font-light">
             Que bom ter você de volta!
