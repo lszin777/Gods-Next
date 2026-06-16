@@ -80,7 +80,7 @@ export default function Navbar() {
                   alt="Foto do Usuário"
                   className="w-full h-full object-cover rounded-full"
                   onError={(e) => {
-                    e.target.src = "./src/imagens/logo.png";
+                    e.target.src = "/logo.png";
                   }}
                 />
               </motion.button>
