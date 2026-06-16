@@ -116,6 +116,15 @@ function App() {
               <Profile />
             </ProtectedRoute>
           } />
+
+          <Route path="/conselheiro" element={
+            <ProtectedRoute user={user} loading={loading}>
+              <Chatbot user={user} />
+            </ProtectedRoute>
+          } />
+
+
+
           <Route path="/conselheiro" element={<Chatbot />} />
         </Routes>
       </div>
