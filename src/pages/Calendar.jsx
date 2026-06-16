@@ -96,7 +96,6 @@ export default function Calendar() {
       const dateKey = formatDateKey(selectedDate);
 
       try {
-        // Busca com query dinâmica (não depende do ID do documento)
         const q = query(
           collection(db, "diary_records"),
           where("userId", "==", user.uid),
@@ -151,6 +150,7 @@ export default function Calendar() {
     <div className="min-h-screen bg-gray-100/60 pt-24 pb-12 px-4 md:px-8 flex justify-center items-center">
       <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-8 items-stretch">
         
+        {/* CONTAINER DO CALENDÁRIO */}
         <div className="flex-1 bg-white rounded-[32px] p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-8">
@@ -182,9 +182,10 @@ export default function Calendar() {
               ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-2">
+            {/* GRID DOS DIAS AJUSTADO */}
+            <div className="grid grid-cols-7 gap-x-2 gap-y-3">
               {daysArray.map((dateItem, index) => {
-                if (!dateItem) return <div key={`empty-${index}`} />;
+                if (!dateItem) return <div key={`empty-${index}`} className="aspect-square" />;
 
                 const isSelected = selectedDate && 
                                    dateItem.getDate() === selectedDate.getDate() && 
@@ -205,7 +206,7 @@ export default function Calendar() {
                     key={`day-${dateItem.getDate()}`}
                     onClick={() => setSelectedDate(dateItem)}
                     className={`
-                      aspect-square rounded-2xl flex flex-col items-center justify-center relative font-medium transition-all text-base md:text-lg
+                      aspect-square rounded-2xl flex flex-col items-center justify-center relative font-semibold transition-all text-base md:text-lg focus:outline-none select-none
                       ${isSelected 
                         ? 'bg-[#3B429F] text-white shadow-lg shadow-[#3B429F]/30 scale-105' 
                         : isRealToday
@@ -214,14 +215,21 @@ export default function Calendar() {
                       }
                     `}
                   >
-                    <span>{dateItem.getDate()}</span>
+                    {/* Alinhamento correto do texto centralizado */}
+                    <span className={hasStreak ? 'mb-2' : ''}>
+                      {dateItem.getDate()}
+                    </span>
                     
+                    {/* Chama da Sequência corrigida para não quebrar a linha */}
                     {hasStreak && (
-                      <Flame className={`w-4 h-4 absolute bottom-1.5 ${isSelected ? 'text-orange-300' : 'text-orange-500'}`} />
+                      <div className="absolute bottom-1 left-0 right-0 flex justify-center pointer-events-none">
+                        <Flame className={`w-4 h-4 ${isSelected ? 'text-orange-300' : 'text-orange-500'}`} />
+                      </div>
                     )}
 
+                    {/* Indicador de Culto posicionado sem estragar o layout */}
                     {!isSelected && isCultoDay && (
-                      <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-[#3B429F] rounded-full" />
+                      <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#3B429F] rounded-full" />
                     )}
                   </button>
                 );
@@ -230,6 +238,7 @@ export default function Calendar() {
           </div>
         </div>
 
+        {/* COMPONENTE DO RESUMO DIÁRIO */}
         <div className="w-full lg:w-[400px] bg-[#EFEBE4] rounded-[32px] p-8 shadow-sm flex flex-col justify-between border border-[#E6E0D5]">
           <div>
             <span className="text-[11px] font-bold tracking-widest text-[#3B429F] uppercase">
