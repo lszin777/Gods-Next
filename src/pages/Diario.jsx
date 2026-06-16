@@ -38,7 +38,7 @@ export default function Diario() {
           className="w-full md:w-1/2 flex justify-center"
         >
           <img 
-            src="/src/imagens/bibliadiario.png" 
+            src="/bibliadiario.png" 
             alt="Bíblia Diário" 
             className="w-full max-w-[550px] object-contain drop-shadow-2xl"
             onError={(e) => { e.target.src = 'https://via.placeholder.com/500x400?text=Bíblia+Diário' }}

@@ -76,7 +76,7 @@ export default function Navbar() {
                 className="w-11 h-11 rounded-full border-2 border-[#3B429F]/30 p-0.5 overflow-hidden shadow-sm hover:border-[#3B429F] transition-all bg-white flex items-center justify-center"
               >
                 <img
-                  src="/src/imagens/logoigreja.png"
+                  src="/logoigreja.png"
                   alt="Foto do Usuário"
                   className="w-full h-full object-cover rounded-full"
                   onError={(e) => {
